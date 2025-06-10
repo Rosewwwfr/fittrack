@@ -35,10 +35,16 @@
             </intent-filter>
         </activity>
         
+        <!-- 在 </application> 标签前添加 -->
         <activity
-            android:name=".ui.activity.AddWorkoutRecordActivity"
+            android:name=".ui.activity.WorkoutRecordDetailActivity"
             android:exported="false"
             android:parentActivityName=".MainActivity" />
+        
+        <activity
+            android:name=".ui.activity.EditWorkoutRecordActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.activity.WorkoutRecordDetailActivity" />
     </application>
 
 </manifest>

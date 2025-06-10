@@ -1,11 +1,14 @@
 package top.rose.fittrack.ui.fragments;
 
+import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -20,6 +23,8 @@ import top.rose.fittrack.database.DatabaseManager;
 import top.rose.fittrack.auth.AuthManager;
 import top.rose.fittrack.database.entity.WorkoutRecord;
 import top.rose.fittrack.ui.activity.AddWorkoutRecordActivity;
+import top.rose.fittrack.ui.activity.EditWorkoutRecordActivity;
+import top.rose.fittrack.ui.activity.WorkoutRecordDetailActivity;
 import top.rose.fittrack.ui.adapter.WorkoutRecordAdapter;
 
 import java.util.ArrayList;
@@ -67,6 +72,8 @@ public class WorkoutRecordFragment extends Fragment {
         tvEmptyState = view.findViewById(R.id.tv_empty_state);
     }
     
+    private static final int REQUEST_CODE_DETAIL = 1002;
+    
     private void setupRecyclerView() {
         adapter = new WorkoutRecordAdapter(workoutRecords);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
@@ -75,14 +82,71 @@ public class WorkoutRecordFragment extends Fragment {
         adapter.setOnItemClickListener(new WorkoutRecordAdapter.OnItemClickListener() {
             @Override
             public void onItemClick(WorkoutRecord workoutRecord) {
-                // TODO: 打开训练记录详情
+                // 打开详情页面
+                Intent intent = new Intent(getContext(), WorkoutRecordDetailActivity.class);
+                intent.putExtra(WorkoutRecordDetailActivity.EXTRA_WORKOUT_RECORD_ID, workoutRecord.getId());
+                startActivityForResult(intent, REQUEST_CODE_DETAIL);
             }
             
             @Override
             public void onItemLongClick(WorkoutRecord workoutRecord) {
-                // TODO: 显示删除/编辑选项
+                // 显示操作选项对话框
+                showActionDialog(workoutRecord);
             }
         });
+    }
+    
+    private void showActionDialog(WorkoutRecord workoutRecord) {
+        String[] options = {"查看详情", "编辑", "删除"};
+        
+        new AlertDialog.Builder(requireContext())
+                .setTitle(workoutRecord.getExerciseName())
+                .setItems(options, (dialog, which) -> {
+                    switch (which) {
+                        case 0: // 查看详情
+                            Intent detailIntent = new Intent(getContext(), WorkoutRecordDetailActivity.class);
+                            detailIntent.putExtra(WorkoutRecordDetailActivity.EXTRA_WORKOUT_RECORD_ID, workoutRecord.getId());
+                            startActivityForResult(detailIntent, REQUEST_CODE_DETAIL);
+                            break;
+                        case 1: // 编辑
+                            Intent editIntent = new Intent(getContext(), EditWorkoutRecordActivity.class);
+                            editIntent.putExtra(EditWorkoutRecordActivity.EXTRA_WORKOUT_RECORD_ID, workoutRecord.getId());
+                            startActivityForResult(editIntent, REQUEST_CODE_DETAIL);
+                            break;
+                        case 2: // 删除
+                            showDeleteConfirmDialog(workoutRecord);
+                            break;
+                    }
+                })
+                .show();
+    }
+    
+    private void showDeleteConfirmDialog(WorkoutRecord workoutRecord) {
+        new AlertDialog.Builder(requireContext())
+                .setTitle("删除训练记录")
+                .setMessage("确定要删除 \"" + workoutRecord.getExerciseName() + "\" 这条训练记录吗？此操作不可撤销。")
+                .setPositiveButton("删除", (dialog, which) -> deleteWorkoutRecord(workoutRecord))
+                .setNegativeButton("取消", null)
+                .show();
+    }
+    
+    private void deleteWorkoutRecord(WorkoutRecord workoutRecord) {
+        databaseManager.executeInBackground(() -> {
+            databaseManager.getDatabase().workoutRecordDao().deleteWorkoutRecord(workoutRecord);
+            requireActivity().runOnUiThread(() -> {
+                Toast.makeText(getContext(), "训练记录已删除", Toast.LENGTH_SHORT).show();
+                loadWorkoutRecords(); // 重新加载数据
+            });
+        });
+    }
+    
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_CODE_DETAIL && resultCode == Activity.RESULT_OK) {
+            // 重新加载数据
+            loadWorkoutRecords();
+        }
     }
     
     private void setupFab() {
