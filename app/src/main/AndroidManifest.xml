@@ -35,6 +35,10 @@
             </intent-filter>
         </activity>
         
+        <activity
+            android:name=".ui.activity.AddWorkoutRecordActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity" />
     </application>
 
 </manifest>

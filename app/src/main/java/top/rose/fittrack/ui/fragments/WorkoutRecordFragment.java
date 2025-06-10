@@ -1,5 +1,6 @@
 package top.rose.fittrack.ui.fragments;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -17,6 +18,9 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import top.rose.fittrack.R;
 import top.rose.fittrack.database.DatabaseManager;
 import top.rose.fittrack.auth.AuthManager;
+import top.rose.fittrack.database.entity.WorkoutRecord;
+import top.rose.fittrack.ui.activity.AddWorkoutRecordActivity;
+import top.rose.fittrack.ui.adapter.WorkoutRecordAdapter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,12 +32,15 @@ public class WorkoutRecordFragment extends Fragment {
     private TextView tvEmptyState;
     private DatabaseManager databaseManager;
     private AuthManager authManager;
+    private WorkoutRecordAdapter adapter;
+    private List<WorkoutRecord> workoutRecords;
     
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         databaseManager = DatabaseManager.getInstance(requireContext());
         authManager = AuthManager.getInstance(requireContext());
+        workoutRecords = new ArrayList<>();
     }
     
     @Nullable
@@ -44,9 +51,14 @@ public class WorkoutRecordFragment extends Fragment {
         initViews(view);
         setupRecyclerView();
         setupFab();
-        loadWorkoutRecords();
         
         return view;
+    }
+    
+    @Override
+    public void onResume() {
+        super.onResume();
+        loadWorkoutRecords();
     }
     
     private void initViews(View view) {
@@ -56,20 +68,48 @@ public class WorkoutRecordFragment extends Fragment {
     }
     
     private void setupRecyclerView() {
+        adapter = new WorkoutRecordAdapter(workoutRecords);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        // TODO: 设置适配器
+        recyclerView.setAdapter(adapter);
+        
+        adapter.setOnItemClickListener(new WorkoutRecordAdapter.OnItemClickListener() {
+            @Override
+            public void onItemClick(WorkoutRecord workoutRecord) {
+                // TODO: 打开训练记录详情
+            }
+            
+            @Override
+            public void onItemLongClick(WorkoutRecord workoutRecord) {
+                // TODO: 显示删除/编辑选项
+            }
+        });
     }
     
     private void setupFab() {
         fabAddRecord.setOnClickListener(v -> {
-            // TODO: 打开添加训练记录的Activity或Dialog
+            Intent intent = new Intent(getContext(), AddWorkoutRecordActivity.class);
+            startActivity(intent);
         });
     }
     
     private void loadWorkoutRecords() {
-        // TODO: 从数据库加载训练记录
-        // 暂时显示空状态
-        showEmptyState();
+        databaseManager.executeInBackground(() -> {
+            List<WorkoutRecord> records = databaseManager.getDatabase()
+                    .workoutRecordDao()
+                    .getAllWorkoutRecordsByUser(authManager.getCurrentUserId());
+            
+            requireActivity().runOnUiThread(() -> {
+                workoutRecords.clear();
+                workoutRecords.addAll(records);
+                adapter.updateData(workoutRecords);
+                
+                if (workoutRecords.isEmpty()) {
+                    showEmptyState();
+                } else {
+                    hideEmptyState();
+                }
+            });
+        });
     }
     
     private void showEmptyState() {
