@@ -42,9 +42,23 @@
             android:parentActivityName=".MainActivity" />
         
         <activity
+            android:name=".ui.activity.AddWorkoutPlanActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity" />
+        
+        <activity
+            android:name=".ui.activity.WorkoutPlanDetailActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity" />
+        
+        <activity
             android:name=".ui.activity.EditWorkoutRecordActivity"
             android:exported="false"
             android:parentActivityName=".ui.activity.WorkoutRecordDetailActivity" />
+        <activity
+            android:name=".ui.activity.EditWorkoutPlanActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity" />
     </application>
 
 </manifest>
